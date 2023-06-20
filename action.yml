@@ -1,11 +1,18 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Solid Guacamole'
+description: 'Testing JIRA integration'
 inputs:
-  milliseconds: # change this
+  pr_title:
+    description: The title of the pull request which should contain the JIRA story. #{{ github.event.pull_request.title }}
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+  jira_user:
+    description: The email of the jira user.
+    required: true
+  jira_token:
+    description: The API token associated to the user.
+    required: true
+  jira_url:
+    description: The base URL for jira
+    required: true
 runs:
   using: 'node16'
   main: 'dist/index.js'
