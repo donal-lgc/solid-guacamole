@@ -1,5 +1,151 @@
-/******/ (() => { // webpackBootstrap
+require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
+
+/***/ 4131:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const jira_client_1 = __importDefault(__nccwpck_require__(6411));
+function fetchIssueData(issueKey, user, token, url) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const jira = new jira_client_1.default({
+            protocol: 'https',
+            host: url,
+            username: user,
+            password: token,
+            apiVersion: '2',
+            strictSSL: true
+        });
+        const jsonResponse = yield jira.findIssue(issueKey);
+        const result = jsonResponse;
+        return result;
+    });
+}
+exports["default"] = fetchIssueData;
+
+
+/***/ }),
+
+/***/ 3109:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const core = __importStar(__nccwpck_require__(2186));
+const title_parser_1 = __importDefault(__nccwpck_require__(7223));
+const jira_client_1 = __importDefault(__nccwpck_require__(4131));
+function run() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const prTitle = core.getInput('pr_title');
+            core.info(`PR title: '${prTitle}'`);
+            const issueNumbers = (0, title_parser_1.default)(prTitle);
+            core.info(`Parsed issue numbers: ${issueNumbers.join(', ')}`);
+            if (issueNumbers.length === 0) {
+                core.setFailed('PR title does not contain any issue numbers');
+                return;
+            }
+            const jiraUser = core.getInput('jira_user');
+            const jiraToken = core.getInput('jira_token');
+            const jiraUrl = core.getInput('jiraUrl');
+            core.info(`Verifying issues with user '${jiraUser}', token '${jiraToken}', url '${jiraUrl}'`);
+            const issuesMissingFix = [];
+            for (const issueNumber of issueNumbers) {
+                const issueData = yield (0, jira_client_1.default)(issueNumber, jiraUser, jiraToken, jiraUrl);
+                if (issueData.fields.fixVersions.length === 0) {
+                    core.error(`Issue ${issueNumber} does not have any fix versions`);
+                    issuesMissingFix.push(issueNumber);
+                }
+            }
+            if (issuesMissingFix.length > 0) {
+                const issues = issuesMissingFix.join(', ');
+                core.setFailed(`The following issues are missing a fix version: ${issues}`);
+            }
+        }
+        catch (error) {
+            if (error instanceof Error)
+                core.setFailed(error.message);
+        }
+    });
+}
+run();
+
+
+/***/ }),
+
+/***/ 7223:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+// Takes the title of the PR and parses out any JIRA issue numbers and returns them in an array
+// Issue numbers can take the format '[ABC-123]' or '(ABC-123)'
+function parseIssues(prTitle) {
+    const issuesMatch = prTitle.match(/^[[(]([A-Z]+-[0-9]+)[\])].*$/g);
+    if (issuesMatch == null) {
+        return [];
+    }
+    const result = issuesMatch[1]
+        .replace(/[\])][[(]/g, '')
+        .replace(/[[\]()]/g, '')
+        .split(',');
+    return result;
+}
+exports["default"] = parseIssues;
+
+
+/***/ }),
 
 /***/ 7351:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
@@ -57097,152 +57243,6 @@ WError.prototype.cause = function we_cause(c)
 
 /***/ }),
 
-/***/ 4204:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const jira_client_1 = __importDefault(__nccwpck_require__(6411));
-function fetchIssueData(issueKey, user, token, url) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const jira = new jira_client_1.default({
-            protocol: 'https',
-            host: url,
-            username: user,
-            password: token,
-            apiVersion: '2',
-            strictSSL: true
-        });
-        const jsonResponse = yield jira.findIssue(issueKey);
-        const result = jsonResponse;
-        return result;
-    });
-}
-exports["default"] = fetchIssueData;
-
-
-/***/ }),
-
-/***/ 399:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const core = __importStar(__nccwpck_require__(2186));
-const title_parser_1 = __importDefault(__nccwpck_require__(8271));
-const jira_client_1 = __importDefault(__nccwpck_require__(4204));
-function run() {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const prTitle = core.getInput('pr_title');
-            core.info(`PR title: '${prTitle}'`);
-            const issueNumbers = (0, title_parser_1.default)(prTitle);
-            core.info(`Parsed issue numbers: ${issueNumbers.join(', ')}`);
-            if (issueNumbers.length === 0) {
-                core.setFailed('PR title does not contain any issue numbers');
-                return;
-            }
-            const jiraUser = core.getInput('jira_user');
-            const jiraToken = core.getInput('jira_token');
-            const jiraUrl = core.getInput('jiraUrl');
-            core.info(`Verifying issues with user '${jiraUser}', token '${jiraToken}', url '${jiraUrl}'`);
-            const issuesMissingFix = [];
-            for (const issueNumber of issueNumbers) {
-                const issueData = yield (0, jira_client_1.default)(issueNumber, jiraUser, jiraToken, jiraUrl);
-                if (issueData.fields.fixVersions.length === 0) {
-                    core.error(`Issue ${issueNumber} does not have any fix versions`);
-                    issuesMissingFix.push(issueNumber);
-                }
-            }
-            if (issuesMissingFix.length > 0) {
-                const issues = issuesMissingFix.join(', ');
-                core.setFailed(`The following issues are missing a fix version: ${issues}`);
-            }
-        }
-        catch (error) {
-            if (error instanceof Error)
-                core.setFailed(error.message);
-        }
-    });
-}
-run();
-
-
-/***/ }),
-
-/***/ 8271:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-// Takes the title of the PR and parses out any JIRA issue numbers and returns them in an array
-// Issue numbers can take the format '[ABC-123]' or '(ABC-123)'
-function parseIssues(prTitle) {
-    const issuesMatch = prTitle.match(/^[[(]([A-Z]+-[0-9]+)[\])].*$/g);
-    if (issuesMatch == null) {
-        return [];
-    }
-    const result = issuesMatch[1]
-        .replace(/[\])][[(]/g, '')
-        .replace(/[[\]()]/g, '')
-        .split(',');
-    return result;
-}
-exports["default"] = parseIssues;
-
-
-/***/ }),
-
 /***/ 9491:
 /***/ ((module) => {
 
@@ -57617,8 +57617,9 @@ module.exports = JSON.parse('["ac","com.ac","edu.ac","gov.ac","net.ac","mil.ac",
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __nccwpck_require__(399);
+/******/ 	var __webpack_exports__ = __nccwpck_require__(3109);
 /******/ 	module.exports = __webpack_exports__;
 /******/ 	
 /******/ })()
 ;
+//# sourceMappingURL=index.js.map
